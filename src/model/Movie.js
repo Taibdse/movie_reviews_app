@@ -1,5 +1,6 @@
 const mongoose = require('mongoose');
 const Schema = mongoose.Schema;
+// title, image, description, ratings, avgRate, info {director, actors, rated, start, duration}, category
 
 const MovieSchema = new Schema({
     title: {

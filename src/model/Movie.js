@@ -2,8 +2,21 @@ const mongoose = require('mongoose');
 const Schema = mongoose.Schema;
 // title, image, description, ratings, avgRate, info {director, actors, rated, start, duration}, category
 
+
+// title1, title2,
+// info: { directors, actors, country, start, duration, status },
+// description, image,
+// link: movie.link
+
 const MovieSchema = new Schema({
     title: {
+        type: {
+            vn: String,
+            en: String
+        },
+        required: true,
+    },
+    slug: {
         type: String,
         required: true,
         unique: true
@@ -31,15 +44,17 @@ const MovieSchema = new Schema({
         type: Number,
         min: 0,
         max: 10,
-        default:  0
+        default: 0
     },
     info: {
         type: {
-            director: String,
+            directors: String,
             actors: String,
             start: Date,
             duration: Number,
-            rated: String
+            status: String,
+            country: String,
+            link: String
         }
     },
     category: {

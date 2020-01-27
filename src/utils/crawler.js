@@ -1,50 +1,61 @@
 
-const CRAWLED_WEBSITE = 'http://phimmoi.net';
 const puppeteer = require('puppeteer');
+const FileUtils = require('./file_utils');
+const { MOVIES_FILE_PATH, CATEGORIES_FILE_PATH } = require('../common/constants')
+const CRAWLED_WEBSITE = 'http://phimmoi.net';
+
 
 class Crawler {
 
+    static async crawl(){
+        // Crawler.crawlMovieDetails();
+        const browser = await puppeteer.launch({ headless: false });
 
-    static async crawlCategories(){
         let crawledMovies = [];
+        let crawledCategories = await Crawler.crawlCategories(browser);
+        
+
+        for(let index in crawledCategories){
+            // if(index <= 3){
+                let cate = crawledCategories[index];
+                let list = await Crawler.crawlMovieListByCategory(browser, cate);
+                crawledMovies = crawledMovies.concat(list);    
+            // }
+            
+        }
+
+        let list = [...crawledMovies];
+        crawledMovies.length = 0;
+
+        for(let index in list){
+            // if(index <= 3){
+                let movie = list[index];
+                const m = await Crawler.crawlMovieDetails(browser, movie);
+                crawledMovies.push(m);
+            // }
+            
+        }
+
+        await browser.close();
+
+
+        console.log(crawledMovies);
+        console.log(crawledMovies.length);
+        
+        FileUtils.writeJsonToFile(CATEGORIES_FILE_PATH, crawledCategories);
+        FileUtils.writeJsonToFile(MOVIES_FILE_PATH, crawledMovies);
+    }
+
+
+    static async crawlCategories(browser){
         let categories = [];
 
         try {
-            const browser = await puppeteer.launch({ headless: false })
+            // const browser = await puppeteer.launch({ headless: false })
             const page = await browser.newPage();
             
-            await page.goto('http://www.phimmoi.net/the-loai/phim-hanh-dong/', { waitUntil: 'domcontentloaded', timeout: 0 });
+            await page.goto(CRAWLED_WEBSITE, { waitUntil: 'domcontentloaded', timeout: 0 });
     
-         
-            //get movie categories
-            // categories = await page.evaluate(() => {
-            //     const $menu = document.querySelector('nav div.menu-main-menu-container');
-            //     // ul.dropdown-menu li
-            //     const $cateDropdown = $menu.querySelector('ul#menu-main-menu li.mega.dropdown');
-            //     const $cateLiList = $cateDropdown.querySelectorAll('ul.dropdown-menu li');
-            //     let cateArr = [];
-            //     for(const $cate of $cateLiList){
-            //         const title = $cate.querySelector('a').innerText.replace(/Phim/gi, '').trim().replace(/\s\s+/g, '');
-            //         const link = $cate.querySelector('a').getAttribute('href').trim();
-    
-            //         cateArr.push({
-            //             id: Math.random().toFixed(8), title, link 
-            //         });
-            //     }
-    
-            //     return cateArr;
-            // })
-            
-            // console.log(categories);
-    
-            // for(let cate of categories){
-            //     const movieDetailLinks = await crawlMovieListByCategory(page, cate);
-            //     crawledMovies = [...crawledMovies, ...movieDetailLinks];
-            // }
-    
-            // console.log('movie detail links: ');
-
-
             categories = await page.evaluate(() => {
                 const $menu = document.querySelector('ul#mega-menu-1');
                 const $aList = $menu.querySelectorAll('li:nth-of-type(2) .sub-container:nth-of-type(1) li a');
@@ -67,126 +78,210 @@ class Crawler {
             }));
 
     
-            await browser.close();
-            
+           
         } catch (error) {
-            console.log('crawl errors: ' + error);
+            console.log('crawl categories errors: ' + error);
         } 
         
         console.log('============= done crawling categories ============');
-        console.log(categories)
-
-        // console.log('============ crawl movie details for every movie ========');
-
-
+        console.log(categories);
+        return categories;
     }
     
-    static async crawlMovieListByCategory(link = 'http://www.phimmoi.net/the-loai/phim-hanh-dong/'){
-
+    static async crawlMovieListByCategory(browser, category){
+        let movies = [];
+        let page;
         try {
-            const browser = await puppeteer.launch({ headless: false });
-            const page = await browser.newPage();
-            await page.goto(link, { waitUntil: 'domcontentloaded', timeout: 0 });
+            // const browser = await puppeteer.launch({ headless: false });
+            page = await browser.newPage();
+            for(let i = 1; i <= 1; i++){
+                try {
+                    await page.goto(category.link + 'page-'+ i +'.html', { waitUntil: 'domcontentloaded', timeout: 0 });
+                    let list = await page.$$eval('ul.list-movie li.movie-item > a', $ele => {
+                        let arr = [];
+                        for(let $e of $ele){
+                            arr.push({
+                                categoryId: 1,
+                                link: $e.getAttribute('href').trim()
+                            })
+                        }
+                        return arr;
+                    });
+                    
+                    list = list.map(item => ({ 
+                        ...item, 
+                        categoryId: category.id, 
+                        link: CRAWLED_WEBSITE + '/' + item.link 
+                    }));
 
-            await page.evaluate(() => {
-                $paginationLink = document.querySelector('ul.pagination li a');
-                $paginationLink.click();
-            })
+                    movies = movies.concat(list); 
+                } catch (error) {
+                    console.log(error);
+                    break;
+                }
+            }
+
+            // await browser.close();
+            await page.close();
+
         } catch (error) {
-            console.log('crawl errors');
+            await page.close();
+            console.log('============ crawling movie list errors ==========');
             console.log(error);
         }
+        
 
-        console.log('done crawling');
+        console.log('============= done crawling movie list ==========');
+        console.log(movies);
+        return movies;
 
-
-        // await page.goto(category.link, { waitUntil: 'networkidle2' });
-    
-        // const numOfPage = await page.evaluate(() => {
-        //     const $pagination = document.querySelector('ul.page-numbers');
-        //     const $page = $pagination.querySelector('li:nth-last-child(2) a');
-        //     return $page.textContent;
-        // });
-    
-        // const numOfPageToCrawl = (Number(numOfPage) > 4) ? 4 : Number(numOfPage);
-        // let movieList = [];
-    
-        // for(let i = 1; i <= numOfPageToCrawl; i++){
-        //     await page.goto(category.link + '/page/' + i, { waitUntil: 'networkidle0' });
-    
-        //     let movies = await page.evaluate(() => {
-        //         const $boxes = document.querySelectorAll('main#main-contents > div.halim_box article .halim-item');
-        //         const arr = [];
-        //         for(let $item of $boxes){
-        //             const movieDetailsLink = $item.querySelector('a').getAttribute('href');
-        //             arr.push({
-        //                 link: movieDetailsLink,
-        //             });   
-        //         }
-        //         return arr;
-        //     });
-    
-        //     movies = movies.map(movie => ({ ...movie, categoryId: category.id }));
-        //     console.log(movies);
-    
-        //     movieList = [...movieList, ...movies];
-    
-        //     // await pageOnPaginationItem.close();
-        // }
-    
-        // // console.log(movieDetailLinks);
-    
-        // return movieList;
     }
-    
-    static async crawlMovieDetails(page, movies){
+
+    static async getEleContent(page, selector){
         try {
-            const browser = await puppeteer.launch({ headless: false });
+            const val = await page.$eval(selector, $ele => $ele.textContent);
+            return val;
+        } catch (error) {
+            return '';
+        }
+    }
+
+    static async getListEleContent(page, selector){
+        try {
+            let list = await page.$$eval(selector, $eles => $eles.map($ele => $ele.textContent.trim()));
+            if(list.length == 0) return '';
+            return list.join(', ').slice(0, -2);
+        } catch (error) {
+            return '';
+        }
+    }
+
+    static async getEleAttrValue(page, selector, attrName){
+        try {
+            return await page.$eval(selector, $ele => $ele.getAttribute('src'))
+        } catch (error) {
+            return '';
+        }
+    } 
+    
+    static async crawlMovieDetails(browser, movie){
+        let page;
+        try {
             page = await browser.newPage();
-            // await page.goto(movies[0].link, { waitUntil: 'networkidle2' });
-            await page.goto('http://www.phimmoi.net/phim/cuoc-chien-hau-cung-10070/', { waitUntil: 'networkidle2' });
+
+            await page.goto(movie.link, { waitUntil: 'domcontentloaded' });
+            const wrapperClassname = 'div.block-wrapper.page-single > div.movie-info';
+
+            const title1 = await Crawler.getEleContent(page, wrapperClassname + ' h1.movie-title span.title-1');
+            const title2 = await Crawler.getEleContent(page, wrapperClassname + ' h1.movie-title span.title-2');
+            const directors = await Crawler.getListEleContent(page, wrapperClassname + ' dd.dd-director a.director');
+            const actors = await Crawler.getListEleContent(page, wrapperClassname + ' div.block-actors div.caroufredsel_wrapper ul#list_actor_carousel li div.actor-name > span.actor-name-a');
+            const country = await Crawler.getEleContent(page, wrapperClassname + ' a.country');
+            const status = await Crawler.getEleContent(page, wrapperClassname + ' .movide-dd.status');
+    
+            let description = await Crawler.getEleContent(page, wrapperClassname + ' div#film-content p');
+            description = description.replace(/\s\s+/g, '');
+            const image = await Crawler.getEleAttrValue(page, wrapperClassname + ' div.movie-image > div.movie-l-img > img', 'src');
             
-            const movie = await page.evaluate(() => {
-                // const $wrapContent = document.querySelector('section#content > .wrap-content')
+            let movieDLClassname = wrapperClassname + ' div.movie-meta-info dl.movie-dl';
+            let start = '', duration = '';
 
-                // // title, image, description, ratings, avgRate, info {director, actors, rated, start, duration}, category
+            try {
+                let info = await page.$$eval(movieDLClassname + ' > *', $eles => {
+                    let start, duration;
+                    let prop = '';
+                    for(let $ele of $eles){
+                        
+                        if($ele.tagName.toLowerCase() == 'dt'){
+                            if($ele.textContent.trim() == 'Ngày khởi chiếu:') {
+                                prop = 'start';
+                            } else if($ele.textContent.trim() == 'Thời lượng:'){
+                                prop = 'duration';
+                            }
+                        } else if($ele.tagName.toLowerCase() == 'dd'){
+                            if(prop == 'start') {
+                                prop = '';
+                                start = $ele.textContent;
+                            }
+                            if(prop == 'duration') {
+                                prop = '';
+                                duration = $ele.textContent;
+                            }
+                        }
+                    }
 
-                // const title = $wrapContent.querySelector('h1.entry-title').textContent;
-                // const description = $wrapContent.querySelector('article.item-content').textContent;
-                // const image = $wrapContent.querySelector('img.movie-thumb').getAttribute('src');
-                // const duration = $wrapContent.querySelector('.more-info span:first-child').textContent.trim().replace('/\D/g', '');
-                // const country = $wrapContent.querySelector('dic.movie-detail .actors a').getAttribute('title');
+                    return { start, duration };
+                });
 
+                console.log(info);
+                // return;
 
-                //phim.net website movie details
-                const $wrapContent = document.querySelector('div.block-wrapper.page-single > div.movie-info');
-                const title1 = $wrapContent.querySelector('h1.movie-title span.title-1').textContent;
-                const title2 = $wrapContent.querySelector('h1.movie-title span.title-2').textContent;
-                const director = $wrapContent.querySelector('a.director').textContent;
-                const $actors = $wrapContent.querySelectorAll('div.block-actors div.actor-name > span.actor-name-a');
+                start = info.start;
+                duration = info.duration;
+
+            } catch (error) {
                 
-                let actors = '';
-                for(let $actor of $actors){
-                    actors += $actor.textContent + ', ';
-                }
-                actors = actors.substring(0, actors.length - 2);
+            }
 
-                const country = $wrapContent.querySelector('a.country').textContent;
-                const start = $wrapContent.querySelector('div.movie-meta-info dd:nth-of-type(7)').textContent;
-                const duration = $wrapContent.querySelector('div.movie-meta-info dd:nth-of-type(8)').textContent.replace(/\D/g, '');
-                const description = $wrapContent.querySelector('div#film-content p').textContent.replace(/\s\s+/g, '');
-                const image = $wrapContent.querySelector('.movie-image img').getAttribute('src');
+            await page.close();
+            
+            if(!start){
+                start = '';
+            } 
 
-                return {
-                    title1, title2, 
-                    info: { director, actors, country, start, duration },
-                    description, image
-                }
-            })
+            if(!duration){
+                duration = '';
+            } 
+            let startIndex = movie.link.indexOf('phimmoi.net/phim/') + 'phimmoi.net/phim/'.length;
+            const slug = movie.link.substring(startIndex, movie.link.length - 1);
+            return {
+                categoryId: movie.categoryId,
+                title1, title2,
+                info: { directors, actors, country, start, duration, status },
+                description, image,
+                link: movie.link,
+                slug
+            }
 
-            console.log(movie);
+            
+            // const crawledMovie = await page.evaluate(() => {
+
+              
+
+            //     //phim.net website movie details
+            //     const $wrapContent = document.querySelector('div.block-wrapper.page-single > div.movie-info');
+                
+            //     //elements
+            //     const $title1 = $wrapContent.querySelector('h1.movie-title span.title-1');
+            //     const $title2 = $wrapContent.querySelector('h1.movie-title span.title-2');
+            //     const $director = $wrapContent.querySelector('a.director');
+            //     const $actors = $wrapContent.querySelectorAll('div.block-actors div.actor-name > span.actor-name-a');
+            //     const $country = $wrapContent.querySelector('a.country');
+            //     const $start = $wrapContent.querySelector('div.movie-meta-info dd:nth-of-type(7)');
+            //     const $duration = $wrapContent.querySelector('div.movie-meta-info dd:nth-of-type(8)');
+            //     const $description = $wrapContent.querySelector('div#film-content p');
+            //     const $image = $wrapContent.querySelector('.movie-image img');
+
+            //     const title1 = getEleContent($title1);
+            //     const title2 = getEleContent($title2);
+            //     const director = getEleContent($director);
+            //     const actors = getListEleContent($actors);
+            //     const country = getEleContent($country);
+            //     const start = getEleContent($start);
+            //     const duration = getEleContent($duration).textContent.replace(/\D/g, '');;
+            //     const description = getEleContent($description).textContent.replace(/\s\s+/g, '');;
+            //     const image = getEleAttrValue($image, 'src');
+
+            //     return {
+            //         title1, title2, 
+            //         info: { director, actors, country, start, duration },
+            //         description, image
+            //     }
+            // });
+
         } catch (error) {
             console.log(error);
+            await page.close();
         }
 
         console.log('done crawl movie details');

@@ -2,6 +2,7 @@ const express = require('express');
 const cors = require('cors');
 const { connectMongoDB } = require('./src/config/db');
 const Crawler = require('./src/utils/crawler');
+const FileUtils = require('./src/utils/file_utils')
 const app = express();
 
 // connectMongoDB()
@@ -11,14 +12,14 @@ const app = express();
 //     process.exit(1);
 // })
 
+
+
 app.use(cors());
 app.use(express.urlencoded({ extended:false }));
 app.use(express.json());
 
 //crawl data
-// Crawler.crawlMovieDetails();
-// Crawler.crawlCategories();
-Crawler.crawlMovieListByCategory();
+Crawler.crawl();
 
 const PORT = process.env.PORT || 6000;
 app.listen(PORT, () => console.log(`Server is running on port ${PORT}`));

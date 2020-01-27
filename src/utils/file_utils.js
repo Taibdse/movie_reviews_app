@@ -6,7 +6,7 @@ class FileUtils{
         fs.writeFileSync(filePath, json);
     }
 
-    static readJsonFromFile(){
+    static readJsonFromFile(filePath){
         const data = fs.readFileSync(filePath)
         return JSON.parse(data);
     }

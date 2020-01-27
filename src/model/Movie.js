@@ -8,6 +8,8 @@ const Schema = mongoose.Schema;
 // description, image,
 // link: movie.link
 
+
+
 const MovieSchema = new Schema({
     title: {
         type: {
@@ -27,20 +29,23 @@ const MovieSchema = new Schema({
     },
     description: {
         type: String,
-        minlength: 10,
-        required: true,
     },
-    ratings: [{
-        user: Schema.Types.ObjectId,
-        rate: {
-            type: Number,
-            default: 0,
-            min: 0,
-            max: 10
-        },
-        ref: 'User'
-    }],
-    avgRate: {
+    ratings: {
+        type: [{
+            user: {
+                type: Schema.Types.ObjectId,
+                ref: 'User'
+            },
+            stars: {
+                type: Number,
+                default: 0,
+                min: 0,
+                max: 10
+            },
+        }],
+        default: []
+    },
+    avgStars: {
         type: Number,
         min: 0,
         max: 10,
@@ -50,8 +55,8 @@ const MovieSchema = new Schema({
         type: {
             directors: String,
             actors: String,
-            start: Date,
-            duration: Number,
+            start: String,
+            duration: String,
             status: String,
             country: String,
             link: String

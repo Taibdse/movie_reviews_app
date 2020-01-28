@@ -60,6 +60,9 @@ class MovieService {
     }
 
     static async insertCrawledMovies(){
+        await Movie.deleteMany({});
+        await Category.deleteMany({});
+
         const categories = FileUtils.readJsonFromFile(CATEGORIES_FILE_PATH);
         const movies = FileUtils.readJsonFromFile(MOVIES_FILE_PATH);
 
@@ -95,8 +98,7 @@ class MovieService {
 
             
             try {
-                const res = await Promise.all(insertMoviesPromises);
-                console.log(res);
+                await Promise.all(insertMoviesPromises);
             } catch (error) {
                 console.log(error);
             }

@@ -8,12 +8,13 @@ const CommentSchema = new Schema({
     },
     user: {
         type: Schema.Types.ObjectId,
-        ref: 'User'
+        ref: 'User',
+        required: true,
     },
     movie: {
         type: Schema.Types.ObjectId,
+        ref: 'Movie',
         required: true,
-        ref: 'Movie'
     },
     likes: {
         type: [{

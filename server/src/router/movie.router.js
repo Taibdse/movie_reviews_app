@@ -1,9 +1,10 @@
 const express = require('express');
 const router = express.Router();
-
+const passport = require('passport');
+const Movie = require('../model/Movie');
 const MovieService = require('../service/movie.service');
-const FileUtils = require('../utils/file_utils');
-const { CATEGORIES_FILE_PATH, MOVIES_FILE_PATH } = require('../common/constants')
+const ValidationUtils = require('../utils/validation');
+const { userErrors, movieErrors } = require('../common/errors');
 
 router.get('/search', async (req, res) => {
     console.log(req.query);
@@ -12,7 +13,6 @@ router.get('/search', async (req, res) => {
     itemsPerPage = Number(itemsPerPage);
 
     const result = await MovieService.searchMovies({ keyword, category, page, itemsPerPage });
-    // console.log(result)
     res.status(200).json(result);
 });
 
@@ -22,10 +22,59 @@ router.get('/movie-details/:movieSlug', async (req, res) => {
     res.status(200).json(result);
 });
 
-router.get('/insert-movies', (req, res) => {
-    console.log(123);
-    const data = FileUtils.readJsonFromFile(MOVIES_FILE_PATH);
-    return res.json(JSON.parse(data));
+
+router.post('/rate-movie', passport.authenticate('jwt', { session: false }),
+    async (req, res) => {
+        const { movieId, stars } = req.body;
+        const result = { success: false, errors: {}, data: {} };
+
+        try {
+            const movie = await Movie.findById(movieId);
+            if(!movie){
+                result.errors.movie_notfound = movieErrors.notfound;
+            } else {
+                if(!ValidationUtils.isValidNumberRangeValue(stars, 1, 10)){
+                    result.errors.stars = userErrors.rate;
+                }
+
+                if(ValidationUtils.isEmpty(result.errors)){
+                    let index = movie.ratings.findIndex(rates => rates.user.toString() === req.user.id);
+                    if(index == -1){
+                        movie.ratings.push({
+                            user: req.user._id,
+                            stars: parseInt(stars)
+                        })
+                    } else {
+                        movie.ratings[index].stars = parseInt(stars);
+                    }
+
+                    const totalStars = movie.ratings.reduce((total, rate) => total + rate.stars, 0);
+                    const avgStars = Number((totalStars/movie.ratings.length).toFixed(1));
+                    movie.avgStars = avgStars;
+
+                    const updatedMovie = await movie.save();
+
+                    result.success = true;
+                    result.data = updatedMovie;
+                } 
+            }
+        } catch (error) {
+            console.log(error);
+            result.errors.movie_notfound = movieErrors.notfound;
+        }
+
+        res.status(200).json(result);
+    }
+);
+
+router.get('/insert-crawled-movies', async (req, res) => {
+    try {
+        await MovieService.insertCrawledMovies();
+        res.json({ success: true });
+    } catch (error) {
+        console.log(error);
+        res.json({ success: false });
+    }
 });
 
 

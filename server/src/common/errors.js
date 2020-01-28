@@ -1,7 +1,9 @@
 
 
 const commentErrors = {
-    content: 'Content is required and minlength is 5, maxlength is 10000 characters'
+    content: 'Content is required and minlength is 5, maxlength is 10000 characters',
+    notfound: 'Comment not found',
+    reaction_type:'Invalid type of reaction to this comment!'
 }
 
 const movieErrors = {

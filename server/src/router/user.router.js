@@ -86,7 +86,7 @@ router.post('/login', async (req, res) => {
         jwt.sign(
             payload,
             API_SECRET_KEY,
-            { expiresIn: 3600 },
+            { expiresIn: 3600 * 20 },
             (err, token) => {
                 
                 result.success = true,
@@ -115,48 +115,6 @@ router.get(
         id: req.user.id,
         email: req.user.email
       });
-    }
-);
-
-router.post('/rate_movie', passport.authenticate('jwt', { session: false }),
-    async (req, res) => {
-        const { movieId, stars } = req.body;
-        const result = { success: false, errors: {}, data: {} };
-
-        try {
-            const movie = await Movie.findById(movieId);
-            if(!movie){
-                result.errors.movie_notfound = movieErrors.notfound;
-                res.status(200).json(result);
-            } else {
-                if(!ValidationUtils.isValidNumberRangeValue(stars, 1, 10)){
-                    result.errors.stars = userErrors.rate;
-                }
-
-                if(ValidationUtils.isEmpty(result.errors)){
-                    let index = movie.ratings.findIndex(rates => rates.user.toString() === req.user.id);
-                    if(index == -1){
-                        movie.ratings.push({
-                            user: req.body._id,
-                            stars: parseInt(stars)
-                        })
-                    } else {
-                        movie.ratings[index].stars = parseInt(stars);
-                    }
-                    const updatedMovie = await movie.save();
-
-                    result.success = true;
-                    result.data = updatedMovie;
-                } else {
-                    res.status(200).json(result);
-                }
-            }
-        } catch (error) {
-            console.log(error);
-            result.errors.movie_notfound = movieErrors.notfound;
-        }
-
-        res.status(200).json(result);
     }
 );
 

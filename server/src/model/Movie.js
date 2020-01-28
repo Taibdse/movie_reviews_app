@@ -9,7 +9,6 @@ const Schema = mongoose.Schema;
 // link: movie.link
 
 
-
 const MovieSchema = new Schema({
     title: {
         type: {

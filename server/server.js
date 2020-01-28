@@ -1,8 +1,10 @@
 const express = require('express');
 const cors = require('cors');
+const passport = require('passport');
 const { connectMongoDB } = require('./src/config/db');
-// const MovieService = require('./src/service/movie.service');
-
+const movieRoutes = require('./src/router/movie.router');
+const userRoutes = require('./src/router/user.router');
+const configPassport = require('./src/config/passport');
 
 async function initializeServer(){
 
@@ -22,14 +24,20 @@ async function initializeServer(){
     app.use(express.urlencoded({ extended:false }));
     app.use(express.json());
 
+    // Passport middleware
+    app.use(passport.initialize());
+
+    // Passport Config
+    configPassport(passport);
+    
+
+    //app routes
+    app.use('/api/movies', movieRoutes);
+    app.use('/api/users', userRoutes);
+
+
     //crawl data
     // Crawler.crawl();
-
-    app.use('/api/movies', require('./src/router/movie.router'));
-
-    app.get('/', (req, res) => {
-        res.send('Hello world');
-    });
 
     // insert ,movies, categories to database
     // MovieService.insertCrawledMovies();

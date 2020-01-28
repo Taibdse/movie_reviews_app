@@ -1,7 +1,10 @@
 const Comment = require('../model/Comment');
+const Movie = require('../model/Movie');
 
 class CommentService { 
-    static insertOne(comment){
+    static async insertOne(comment){
+        const movie = await Movie.findById(comment.movieId);
+        
         const comment = new Comment(comment);
         return comment.save();
     }

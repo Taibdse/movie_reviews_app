@@ -1,13 +1,62 @@
 const Movie = require('../model/Movie');
+const Category = require('../model/Category');
 const FileUtils = require('../utils/file_utils');
 const CategoryService = require('./category.service');
 const { MOVIES_FILE_PATH, CATEGORIES_FILE_PATH } = require('../common/constants');
 const StringUtils = require('../utils/strings');
 
-class MovieService{
+
+class MovieService {
     static insertOne(movie){
         const newMovie = new Movie(movie);
         return newMovie.save();
+    }
+
+    static async searchMovies({ keyword, category, page, itemsPerPage }){
+        
+        // return count;
+
+        let myPagingMovies = {
+            page: page,
+            itemsPerPage: itemsPerPage,
+            totalItems: 0,
+            data: [],
+        }
+        const foundCate = await Category.findById(category);
+        if(foundCate == null) return myPagingMovies;
+        const query = {
+            $or: [
+                { 'title.vn': { $regex: keyword, $options: 'gi' } },
+                { 'title.en': { $regex: keyword, $options: 'gi' } }
+            ],
+            category: category
+        };
+
+        const count = await Movie.countDocuments({ 
+            $or: [
+                { 'title.vn': { $regex: keyword, $options: 'gi' } },
+                { 'title.en': { $regex: keyword, $options: 'gi' } }
+            ],
+            category: category
+        });
+
+        if(count == 0){
+            return myPagingMovies;
+        } else {
+            const skip = itemsPerPage * (page - 1);
+
+            const movies = await Movie.find(query, null, { skip: skip, limit: itemsPerPage });
+            myPagingMovies.data = movies;
+            myPagingMovies.totalItems = count;
+
+            return myPagingMovies;
+        }
+        
+    }
+
+    static async getMovieDetailsBySlug(movieSlug){
+        const movie = await Movie.findOne({ slug: movieSlug }).populate('category');
+        return movie;
     }
 
     static async insertCrawledMovies(){

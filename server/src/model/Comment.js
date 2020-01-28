@@ -23,6 +23,14 @@ const CommentSchema = new Schema({
         }],
         required: true,
         default: []
+    },
+    dislikes: {
+        type: [{
+            type: Schema.Types.ObjectId,
+            ref: 'User'
+        }],
+        required: true,
+        default: []
     }
 })
 

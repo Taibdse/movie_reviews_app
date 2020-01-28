@@ -5,7 +5,6 @@ const CommentSchema = new Schema({
     content: {
         type: String,
         required: true,
-        unique: true,
     },
     user: {
         type: Schema.Types.ObjectId,
@@ -32,7 +31,7 @@ const CommentSchema = new Schema({
         required: true,
         default: []
     }
-})
+}, { timestamps: true })
 
 const Comment = mongoose.model('Comment', CommentSchema);
 

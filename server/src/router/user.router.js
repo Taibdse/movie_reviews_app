@@ -5,31 +5,33 @@ const jwt = require('jsonwebtoken');
 const passport = require('passport');
 const gravatar = require('gravatar');
 const User = require('../model/User');
+const Movie = require('../model/Movie');
 const ValidationUtils = require('../utils/validation');
 const { API_SECRET_KEY } = require('../config/keys');
+const { userErrors, movieErrors } = require('../common/errors');
 
 
 router.post('/register', async (req, res) => {
     const { email, password } = req.body;
-    const errors = {};
+    const result = { success: false, errors: {} };
 
     if(!ValidationUtils.isValidEmail(email)){
-        errors.email = 'Email is invalid!'
+        result.errors.email = userErrors.email
     }
 
     if(!ValidationUtils.isValidPassword(password)){
-        errors.password = 'Password is required and minlength must be 4 characters';
+        result.errors.password = userErrors.password;
     }
 
-    if(!ValidationUtils.isEmpty(errors)){
-        return res.status(400).json(errors);
+    if(!ValidationUtils.isEmpty(result.errors)){
+        return res.status(400).json(result);
     }
 
     const user = await User.findOne({ email });
 
     if (user) {
-        errors.email = 'Email already exists';
-        return res.status(400).json(errors);
+        result.errors.email_existed = userErrors.email_existed;
+        return res.status(400).json(result);
     } else {
         const avatar = gravatar.url(email, {
           s: '200', // Size
@@ -49,7 +51,10 @@ router.post('/register', async (req, res) => {
             newUser.password = hash;
             newUser
               .save()
-              .then(user => res.json({ success: true }))
+              .then(user => {
+                result.success = true;
+                res.json(result);
+              })
               .catch(err => console.log(err));
           });
         });
@@ -57,21 +62,23 @@ router.post('/register', async (req, res) => {
 });
 
 router.post('/login', async (req, res) => {
-    let errors = {};
+    const result = { success: false, errors: {}, data: {} };
     const { email, password } = req.body;
+    
   
     // Find user by email
     try {
         const user = await User.findOne({ email });
          // Check for user
         if (!user) {
-            errors.message = 'User not found';
-            return res.status(404).json(errors);
+            result.errors.user_notfound = userErrors.user_notfound;
+            return res.status(404).json(result);
         }
   
       // Check Password
       const isMatch = await bcrypt.compare(password, user.password);
       if (isMatch) {
+        
         // User Matched
         const payload = { id: user.id, email: user.email, avatar: user.avatar }; // Create JWT Payload
 
@@ -81,21 +88,21 @@ router.post('/login', async (req, res) => {
             API_SECRET_KEY,
             { expiresIn: 3600 },
             (err, token) => {
-                res.json({
-                    success: true,
-                    token: 'Bearer ' + token
-                });
+                
+                result.success = true,
+                result.data.token = 'Bearer ' + token;
+                return res.status(200).json(result);
             }
         );
       } else {
-        errors.message = 'Email and password do not match';
-        return res.status(400).json(errors);
+        result.errors.invalid_login = userErrors.invalid_login;
+        return res.status(400).json(result);
       }
 
     } catch (error) {
         console.log(error);
-        errors.message = 'User not found';
-        return res.status(404).json(errors);
+        result.errors.user_notfound = userErrors.user_notfound;
+        return res.status(404).json(result);
     }
    
 });
@@ -110,6 +117,49 @@ router.get(
       });
     }
 );
+
+router.post('/rate_movie', passport.authenticate('jwt', { session: false }),
+    async (req, res) => {
+        const { movieId, stars } = req.body;
+        const result = { success: false, errors: {}, data: {} };
+
+        try {
+            const movie = await Movie.findById(movieId);
+            if(!movie){
+                result.errors.movie_notfound = movieErrors.notfound;
+                res.status(200).json(result);
+            } else {
+                if(!ValidationUtils.isValidNumberRangeValue(stars, 1, 10)){
+                    result.errors.stars = userErrors.rate;
+                }
+
+                if(ValidationUtils.isEmpty(result.errors)){
+                    let index = movie.ratings.findIndex(rates => rates.user.toString() === req.user.id);
+                    if(index == -1){
+                        movie.ratings.push({
+                            user: req.body._id,
+                            stars: parseInt(stars)
+                        })
+                    } else {
+                        movie.ratings[index].stars = parseInt(stars);
+                    }
+                    const updatedMovie = await movie.save();
+
+                    result.success = true;
+                    result.data = updatedMovie;
+                } else {
+                    res.status(200).json(result);
+                }
+            }
+        } catch (error) {
+            console.log(error);
+            result.errors.movie_notfound = movieErrors.notfound;
+        }
+
+        res.status(200).json(result);
+    }
+);
+
 
 
 module.exports = router;

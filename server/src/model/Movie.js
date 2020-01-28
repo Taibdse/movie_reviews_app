@@ -67,7 +67,7 @@ const MovieSchema = new Schema({
         ref: 'Category'
     }
 
-})
+}, { timestamps: true })
 
 const Movie = mongoose.model('Movie', MovieSchema);
 

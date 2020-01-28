@@ -4,6 +4,7 @@ const passport = require('passport');
 const { connectMongoDB } = require('./src/config/db');
 const movieRoutes = require('./src/router/movie.router');
 const userRoutes = require('./src/router/user.router');
+const commentRoutes = require('./src/router/comment.router');
 const configPassport = require('./src/config/passport');
 
 async function initializeServer(){
@@ -34,6 +35,7 @@ async function initializeServer(){
     //app routes
     app.use('/api/movies', movieRoutes);
     app.use('/api/users', userRoutes);
+    app.use('/api/comments', commentRoutes);
 
 
     //crawl data

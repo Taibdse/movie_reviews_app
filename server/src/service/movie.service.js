@@ -10,7 +10,7 @@ class MovieService{
         return newMovie.save();
     }
 
-    static async insertMany(){
+    static async insertCrawledMovies(){
         const categories = FileUtils.readJsonFromFile(CATEGORIES_FILE_PATH);
         const movies = FileUtils.readJsonFromFile(MOVIES_FILE_PATH);
 

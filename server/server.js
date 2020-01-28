@@ -1,7 +1,7 @@
 const express = require('express');
 const cors = require('cors');
 const { connectMongoDB } = require('./src/config/db');
-const MovieService = require('./src/service/movie.service');
+// const MovieService = require('./src/service/movie.service');
 
 
 async function initializeServer(){
@@ -11,7 +11,7 @@ async function initializeServer(){
         await connectMongoDB();
         console.log('DB connected');
     } catch (error) {
-        console.log(err);
+        console.log(error);
         process.exit(1);
     }
 
@@ -31,10 +31,10 @@ async function initializeServer(){
         res.send('Hello world');
     });
 
+    // insert ,movies, categories to database
+    // MovieService.insertCrawledMovies();
 
-    MovieService.insertMany();
-
-    const PORT = process.env.PORT || 6000;
+    const PORT = process.env.PORT || 3001;
 
     app.listen(PORT, () => console.log(`Server is running on port ${PORT}`));
 }

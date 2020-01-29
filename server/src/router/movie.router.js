@@ -9,16 +9,22 @@ const { userErrors, movieErrors } = require('../common/errors');
 router.get('/search', async (req, res) => {
     console.log(req.query);
     let { keyword, category, page, itemsPerPage } = req.query;
+
+    if(ValidationUtils.isEmpty(keyword)) keyword = '';
+    if(ValidationUtils.isEmpty(category)) category = 'all';
     page = Number(page);
     itemsPerPage = Number(itemsPerPage);
 
-    const result = await MovieService.searchMovies({ keyword, category, page, itemsPerPage });
+
+    const data = await MovieService.searchMovies({ keyword, category, page, itemsPerPage });
+    const result = { success: true, data: data };
     res.status(200).json(result);
 });
 
 router.get('/movie-details/:movieSlug', async (req, res) => {
     const { movieSlug } = req.params;
-    const result = await MovieService.getMovieDetailsBySlug(movieSlug);
+    const data = await MovieService.getMovieDetailsBySlug(movieSlug);
+    const result = { success: true, data: data }
     res.status(200).json(result);
 });
 

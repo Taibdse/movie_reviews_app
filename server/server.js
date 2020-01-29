@@ -5,6 +5,7 @@ const { connectMongoDB } = require('./src/config/db');
 const movieRoutes = require('./src/router/movie.router');
 const userRoutes = require('./src/router/user.router');
 const commentRoutes = require('./src/router/comment.router');
+const categoryRoutes = require('./src/router/category.router');
 const configPassport = require('./src/config/passport');
 
 async function initializeServer(){
@@ -36,6 +37,7 @@ async function initializeServer(){
     app.use('/api/movies', movieRoutes);
     app.use('/api/users', userRoutes);
     app.use('/api/comments', commentRoutes);
+    app.use('/api/categories', categoryRoutes);
 
 
     //crawl data

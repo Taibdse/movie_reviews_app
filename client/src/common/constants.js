@@ -1,0 +1,1 @@
+export const MOVIE_NOTFOUND = 'Không tìm thấy phim';

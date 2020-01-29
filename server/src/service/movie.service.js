@@ -14,38 +14,44 @@ class MovieService {
 
     static async searchMovies({ keyword, category, page, itemsPerPage }){
         
-        // return count;
-
         let myPagingMovies = {
             page: page,
             itemsPerPage: itemsPerPage,
             totalItems: 0,
             data: [],
         }
-        const foundCate = await Category.findById(category);
-        if(foundCate == null) return myPagingMovies;
+        let foundCate = null;
+        
+        if(category != 'all') {
+            try {
+                foundCate = await Category.findById(category);
+                if(foundCate == null) return myPagingMovies;
+            } catch (error) {
+                return myPagingMovies;
+            }
+        }
+
+        
+        
+
         const query = {
             $or: [
                 { 'title.vn': { $regex: keyword, $options: 'gi' } },
                 { 'title.en': { $regex: keyword, $options: 'gi' } }
             ],
-            category: category
+            // category: category
         };
 
-        const count = await Movie.countDocuments({ 
-            $or: [
-                { 'title.vn': { $regex: keyword, $options: 'gi' } },
-                { 'title.en': { $regex: keyword, $options: 'gi' } }
-            ],
-            category: category
-        });
+        if(category != 'all') query.category = category;
+
+        const count = await Movie.countDocuments(query);
 
         if(count == 0){
             return myPagingMovies;
         } else {
             const skip = itemsPerPage * (page - 1);
 
-            const movies = await Movie.find(query, null, { skip: skip, limit: itemsPerPage });
+            const movies = await Movie.find(query, null, { skip: skip, limit: itemsPerPage }).select('_id title avgStars image slug');
             myPagingMovies.data = movies;
             myPagingMovies.totalItems = count;
 

@@ -1,7 +1,7 @@
 .text-center{
   text-align: center;
 }
-.img-fluid{
+.img-fluid, .fluid{
   width: 100%;
 }
 .p-10{

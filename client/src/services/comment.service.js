@@ -2,8 +2,8 @@ import axios from 'axios';
 import { API_ENDPOINT } from '../config/api';
 
 class CommentService{
-    static async getCommentsByMovieId(movieId){
-        const url = API_ENDPOINT + `/comments?movieId=${movieId}`;
+    static async getCommentsByMovieId({ movieId, page, itemsPerPage }){
+        const url = API_ENDPOINT + `/comments?movieId=${movieId}&page=${page}&itemsPerPage=${itemsPerPage}`;
         return axios.get(url);
     }
 

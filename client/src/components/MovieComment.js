@@ -1,33 +1,39 @@
 import React from 'react';
 import { Comment, Icon, Tooltip, Avatar } from 'antd';
+import { getAuthUserInfo } from '../config/auth';
+import TimeUtils from '../utils/time';
 
 const MovieComment = (props) => {
 
-    const like = () => {};
-    const dislike = () => {};
-    const action = 'like';
-    
+    const { comment } = props;
+
+    const currentUser = getAuthUserInfo();
+
+    const liked = comment.likes.some(like => like == currentUser.id);
+
+    const disliked = comment.dislikes.some(dislike => dislike == currentUser.id);
+
     const actions = [
         <span key="comment-basic-like">
           <Tooltip title="Like">
             <Icon
               type="like"
-              theme={action === 'liked' ? 'filled' : 'outlined'}
-              onClick={like}
+              theme={liked ? 'filled' : 'outlined'}
+              onClick={props.onLike}
             />
           </Tooltip>
-          <span style={{ paddingLeft: 8, cursor: 'auto' }}>{'2'}</span>
+          <span style={{ paddingLeft: 8, cursor: 'auto' }}>{comment.likes.length}</span>
         </span>,
 
         <span key=' key="comment-basic-dislike"'>
           <Tooltip title="Dislike">
             <Icon
               type="dislike"
-              theme={action === 'disliked' ? 'filled' : 'outlined'}
-              onClick={dislike}
+              theme={disliked ? 'filled' : 'outlined'}
+              onClick={props.onDisLike}
             />
           </Tooltip>
-          <span style={{ paddingLeft: 8, cursor: 'auto' }}>{'2'}</span>
+          <span style={{ paddingLeft: 8, cursor: 'auto' }}>{comment.dislikes.length}</span>
         </span>,
         // <span key="comment-basic-reply-to">Reply to</span>,
       ];
@@ -35,23 +41,21 @@ const MovieComment = (props) => {
     return (
         <Comment
             actions={actions}
-            author={<a>Han Solo</a>}
+            author={<a>{ comment.user.email }</a>}
             avatar={
             <Avatar
-                src="https://zos.alipayobjects.com/rmsportal/ODTLcjxAfvqbxHnVXCYX.png"
-                alt="Han Solo"
+                src={ comment.user.avatar }
+                alt={ comment.user.email }
             />
             }
         content={
           <p>
-            We supply a series of design principles, practical patterns and high quality design
-            resources (Sketch and Axure), to help people create their product prototypes beautifully
-            and efficiently.
+            { comment.content }  
           </p>
         }
         datetime={
-          <Tooltip title={'20/02/2020'}>
-            <span>{'20/02/2020'}</span>
+          <Tooltip title={TimeUtils.getLocalTime(comment.createdAt)}>
+            <span>{TimeUtils.getLocalTime(comment.createdAt)}</span>
           </Tooltip>
         }
       />

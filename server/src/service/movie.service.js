@@ -4,6 +4,7 @@ const FileUtils = require('../utils/file_utils');
 const CategoryService = require('./category.service');
 const { MOVIES_FILE_PATH, CATEGORIES_FILE_PATH } = require('../common/constants');
 const StringUtils = require('../utils/strings');
+const ValidationUtils = require('../utils/validation')
 
 
 class MovieService {
@@ -20,6 +21,7 @@ class MovieService {
             totalItems: 0,
             data: [],
         }
+
         let foundCate = null;
         
         if(category != 'all') {
@@ -31,16 +33,17 @@ class MovieService {
             }
         }
 
+        let query = {};
         
-        
+        if(!ValidationUtils.isEmpty(keyword)){
+            query = {
+                $or: [
+                    { 'title.vn': { $regex: keyword, $options: 'gi' } },
+                    { 'title.en': { $regex: keyword, $options: 'gi' } }
+                ],
+            };
+        }
 
-        const query = {
-            $or: [
-                { 'title.vn': { $regex: keyword, $options: 'gi' } },
-                { 'title.en': { $regex: keyword, $options: 'gi' } }
-            ],
-            // category: category
-        };
 
         if(category != 'all') query.category = category;
 
@@ -51,7 +54,8 @@ class MovieService {
         } else {
             const skip = itemsPerPage * (page - 1);
 
-            const movies = await Movie.find(query, null, { skip: skip, limit: itemsPerPage }).select('_id title avgStars image slug');
+            const movies = await Movie.find(query, null, { skip: skip, limit: itemsPerPage })
+                                        .sort({ 'title.en': 'asc' }).select('_id title avgStars image slug');
             myPagingMovies.data = movies;
             myPagingMovies.totalItems = count;
 

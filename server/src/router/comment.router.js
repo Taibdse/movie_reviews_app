@@ -7,25 +7,27 @@ const ValidationUtils = require('../utils/validation');
 const { commentErrors, movieErrors } = require('../common/errors')
 
 router.get('/', async (req, res) => {
-    const { movieId, page, itemsPerPage } = req.query;
+    let { movieId, page, itemsPerPage } = req.query;
+    page = +page;
+    itemsPerPage = +itemsPerPage;
     const result = { success: false, errors: {}, data: {} };
 
     const myPagingComments = { 
         totalItems: 0,
-        page: Number(page),
-        itemsPerPage: Number(itemsPerPage),
+        page, itemsPerPage,
         data: []
     }
 
     try {
         const movie = await Movie.findById(movieId);
+        console.log(movie);
 
         if(!movie){
             result.errors.movie_notfound = movieErrors.notfound;
         } else {
 
             const count = await Comment.countDocuments({ 
-                movieId: movie._id
+                movie: movie._id
             });
     
             if(count == 0){
@@ -36,7 +38,8 @@ router.get('/', async (req, res) => {
                 const comments = await Comment.find(
                     { movie: movie._id }, 
                     null, 
-                    { skip: skip, limit: itemsPerPage }).populate('user', '_id email avatar')
+                    { skip: skip, limit: itemsPerPage })
+                    .populate('user', '_id email avatar')
 
     
                 myPagingComments.data = comments;

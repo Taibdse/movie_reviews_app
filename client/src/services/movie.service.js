@@ -10,6 +10,11 @@ class MovieService{
     static async getMovieDetails(movieSlug){
         return axios.get(API_ENDPOINT + `/movies/movie-details/` + movieSlug);
     }
+
+    static async rateMovie({ movieId, stars }){
+        return axios.post(API_ENDPOINT + `/movies/rate-movie`, { movieId, stars });
+    }
+
 }
 
 export default MovieService;

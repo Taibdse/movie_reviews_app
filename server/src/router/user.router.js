@@ -91,6 +91,7 @@ router.post('/login', async (req, res) => {
                 
                 result.success = true,
                 result.data.token = 'Bearer ' + token;
+                
                 return res.status(200).json(result);
             }
         );

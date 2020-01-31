@@ -14,5 +14,6 @@ export const userConstants = {
 
 export const commentConstants = {
     content_error: 'Nội dung bình luận phải dài tối thiểu 8 kí tự, tối đa 10000 kí tự',
-    add_comment_success: 'Thêm bình luận thành công'
+    add_comment_success: 'Thêm bình luận thành công',
+    no_comments_found: 'Chưa có bình luận nào!'
 }

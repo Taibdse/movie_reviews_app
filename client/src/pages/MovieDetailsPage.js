@@ -19,7 +19,6 @@ import { getAuthUserInfo } from '../config/auth';
 
 const { TextArea } = Input;
 
-
 const MovieDetailsPage = (props) => {
     const [movie, setMovie] = useState({});
     const [isLoadingMovie, setIsLoadingMovie] = useState(false);
@@ -27,7 +26,11 @@ const MovieDetailsPage = (props) => {
     const [rate, setRate] = useState({ stars: 0 });
     const [comment, setComment] = useState({ content: '' });
     const [comments, setComments] = useState([]);
+    const [commentsPagination, setCommentsPagination] = useState({ page: 1, itemsPerPage: 10 });
     const [isLoadingComments, setIsLoadingComments] = useState(false);
+    const [canLoadMoreComments, setCanLoadMoreComments] = useState(true);
+    const [totalComments, setTotalComments] = useState(0);
+    const [isLoadingMoreComments, setIsLoadingMoreComments] = useState(false);
 
     const userContext = useContext(UserContext);
 
@@ -51,7 +54,8 @@ const MovieDetailsPage = (props) => {
             if(res.data.success && !ValidationUtils.isEmpty(res.data.data)){
                 const newMovie = res.data.data;
                 setMovie(newMovie);
-                getComments({ movieId: newMovie._id, page: 1, itemsPerPage: 10 });
+                const { page, itemsPerPage } = commentsPagination;
+                getComments({ movieId: newMovie._id, page, itemsPerPage });
                 const foundRate = getUserRating(newMovie);
                 if(foundRate) setRate({ ...rate, stars: foundRate.stars }); 
             } else {
@@ -70,9 +74,17 @@ const MovieDetailsPage = (props) => {
             const res = await CommentService.getCommentsByMovieId({ movieId, page, itemsPerPage });
             console.log(res.data);
             const { success, data } = res.data;
-            setComments(data.data);
+            if(success && data.data) {
+                setTotalComments(data.totalItems);
+                setComments(data.data);
+                if(data.totalItems == data.data.length) setCanLoadMoreComments(false);
+            } else {
+                setCanLoadMoreComments(false);
+                setComments([]);
+            }
         } catch (error) {
             setComments([]);
+            setCanLoadMoreComments(false);
         }
         setIsLoadingComments(false);
     }
@@ -84,9 +96,12 @@ const MovieDetailsPage = (props) => {
 
         try {
             const res = await CommentService.addComment({ movieId: movie._id, content: comment.content });
-            const { success } = res.data;
+            const { success, data } = res.data;
             if(success){
-                AlertUtils.showAlert({ type: 'success', title: commentConstants.add_comment_success })
+                setComment({ ...comment, content: '' })
+                setCommentsPagination({ ...commentsPagination, page: 1 });
+                getComments({ movieId: movie._id, page: 1, itemsPerPage: commentsPagination.itemsPerPage });
+                AlertUtils.showAlert({ type: 'success', title: commentConstants.add_comment_success });
             }
         } catch (error) {
             
@@ -128,6 +143,32 @@ const MovieDetailsPage = (props) => {
             console.log(error);
         }
     } 
+
+    const loadMoreComments = async () => {
+        const { page, itemsPerPage } = commentsPagination;
+        const { _id } = movie;
+        console.log('load more');
+        setIsLoadingMoreComments(true);
+        try {
+            const res = await CommentService.getCommentsByMovieId({ movieId: _id, page: page + 1, itemsPerPage });
+            const { success, data } = res.data;
+            if(success && data){
+                console.log(data);
+
+                const newComments = [...comments, ...data.data]
+                setComments(newComments);
+                setCommentsPagination({ ...commentsPagination, page: page + 1 })
+                if(newComments.length >= data.totalItems) {
+                    setCanLoadMoreComments(false);
+                } else {
+                    
+                }
+            }
+        } catch (error) {
+            console.log(error);
+        }
+        setIsLoadingMoreComments(false);
+    }
 
     return (
         <PageLayout>
@@ -214,14 +255,31 @@ const MovieDetailsPage = (props) => {
                             </table>
                         </Col>
                         <Col span={18} style={{ padding: 10 }}>
-                            <h3>Đánh giá phim</h3>
+                            <h3>
+                                Đánh giá phim{' '}
+                                <small>({totalComments} đánh giá)</small>
+                            </h3>
                             <hr/>
-                            { comments.map(comment => <MovieComment 
+                            { (!isLoadingComments && comments.length > 0) && (
+                                <div>
+                                    {comments.map(comment => <MovieComment 
                                                         key={comment._id} 
                                                         comment={comment} 
                                                         onLike={() => handleReact('like', comment)}
                                                         onDisLike={() => handleReact('dislike', comment)}/>
+                                    )}
+                                   { canLoadMoreComments && ( <Button 
+                                                        type="secondary" 
+                                                        style={{ textAlign: "center" }} 
+                                                        onClick={loadMoreComments}
+                                                        loading={isLoadingMoreComments}
+                                                        >Xem thêm</Button>) }
+                                </div>
                             )}
+
+                            { (isLoadingComments) && <MySpinner/> }
+
+                            { (!isLoadingComments && comments.length == 0) && <NotFound message={commentConstants.no_comments_found} /> }
                         </Col>
                     </Row>
                 </>

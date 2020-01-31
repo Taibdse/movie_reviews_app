@@ -31,16 +31,14 @@ class CommentService {
                     const comments = await Comment.find(
                         { movie: movie._id }, 
                         null, 
-                        { skip: skip, limit: itemsPerPage })
+                        { skip: skip, limit: itemsPerPage }).sort({ createdAt: -1 })
                         .populate('user', '_id email avatar')
-
         
                     myPagingComments.data = comments;
                     myPagingComments.totalItems = count;
-                    
-                    result.data = myPagingComments;
                 }
 
+                result.data = myPagingComments;
                 result.success = true;
             }
         } catch (error) {

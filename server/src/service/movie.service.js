@@ -5,7 +5,7 @@ const CategoryService = require('./category.service');
 const { MOVIES_FILE_PATH, CATEGORIES_FILE_PATH } = require('../common/constants');
 const StringUtils = require('../utils/strings');
 const ValidationUtils = require('../utils/validation')
-
+const { userErrors, movieErrors } = require('../common/errors');
 
 class MovieService {
     static insertOne(movie){
@@ -69,6 +69,45 @@ class MovieService {
         return movie;
     }
 
+    static async rateMovie({ movieId, stars, user }){
+        const result = { success: false, errors: {}, data: {} };
+        try {
+            const movie = await Movie.findById(movieId);
+            if(!movie){
+                result.errors.movie_notfound = movieErrors.notfound;
+            } else {
+                if(!ValidationUtils.isValidNumberRangeValue(stars, 1, 10)){
+                    result.errors.stars = userErrors.rate;
+                }
+
+                if(ValidationUtils.isEmpty(result.errors)){
+                    let index = movie.ratings.findIndex(rates => rates.user.toString() === user.id);
+                    if(index == -1){
+                        movie.ratings.push({
+                            user: user._id,
+                            stars: parseInt(stars)
+                        })
+                    } else {
+                        movie.ratings[index].stars = parseInt(stars);
+                    }
+
+                    const totalStars = movie.ratings.reduce((total, rate) => total + rate.stars, 0);
+                    const avgStars = Number((totalStars/movie.ratings.length).toFixed(1));
+                    movie.avgStars = avgStars;
+
+                    const updatedMovie = await movie.save();
+
+                    result.success = true;
+                    result.data = updatedMovie;
+                } 
+            }
+        } catch (error) {
+            console.log(error);
+            result.errors.movie_notfound = movieErrors.notfound;
+        }
+        return result;
+    }
+
     static async insertCrawledMovies(){
         await Movie.deleteMany({});
         await Category.deleteMany({});
@@ -114,9 +153,6 @@ class MovieService {
             }
         })
 
-        
-        // CategoryService
-        // return Movie.insertMany(movies);
     }
 }
 

@@ -9,7 +9,6 @@ class CategoryService{
     static getAll(){
         return Category.find({});
     }
-
 }
 
 module.exports = CategoryService;
